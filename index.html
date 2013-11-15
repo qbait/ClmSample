@@ -1,0 +1,327 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Demo CLM Presentation</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/jquery.mobile-1.3.2.min.css"/>
+    <script src="js/jquery.js"></script>
+    <script src="js/jquery.mobile-1.3.2.min.js"></script>
+
+    <style>
+        .ui-grid-b img {
+            width: 100%;
+            height: auto;
+        }
+
+        form {
+            margin-bottom: 2em;
+        }
+
+        #textarea_1 {
+            height: 7em;
+            width: 100%;
+        }
+    </style>
+
+    <script>
+        var pages = [];
+        var numberOfPages = 4;
+        var pageWithQuestion = 4;
+        var lastTime;
+        var date;
+        var currentPage = 1;
+        var browserPreview = true; //flaga ustawiana w zależności czy chcemy uruchomić prezentację w przeglądarce czy w webview aplikacji mobilnej
+
+        $(document).ready(function () {
+            $.mobile.defaultPageTransition = 'none';
+            initPages();
+            date = new Date();
+            lastTime = date.getTime();
+        })
+
+        function finishPresentation() { //obowiązkowa metoda która powinna wołać "izi.finish(wynikowy_json)"
+            finishPage(currentPage);
+            var result = JSON.stringify(pages);
+            var formattedResult = JSON.stringify(pages, null, 4);
+            if (browserPreview) {
+                alert(formattedResult); //wyświetlamy alert z wynikowym JSONem
+            } else {
+                izi.finish(result); //przekazujemy wynik do aplikcacji mobilnej
+                izi.show("finishPresentation");
+            }
+        }
+
+        function resumePresentation() { //obowiązkowa metoda która np. wznawia liczenie czasu przy przwracaniu prezentacji
+            date = new Date();
+            lastTime = date.getTime();
+            if (!browserPreview) {
+                izi.show("resumePresentation");
+            }
+        }
+
+        function pausePresentation() { //obowiązkowa metoda która wstrzymuje liczenie czasu
+            finishPage(currentPage);
+            if (!browserPreview) {
+                izi.show("pausePresentation");
+            }
+        }
+
+        function initPages() {
+            for (var i = 0; i < numberOfPages; i++) {
+                page = {};
+                page.page = i + 1;
+                page.time = 0;
+
+                if (page.page == pageWithQuestion) {
+                    var questions = [];
+                    var answers = [];
+                    questions[0] = "Jak oceniasz prezentację?";
+                    answers[0] = null;
+                    questions[1] = "Kim jesteś?";
+                    answers[1] = null;
+                    questions[2] = "Opisz swoje uwagi";
+                    answers[2] = null;
+                    page.questions = questions;
+                    page.answers = answers;
+                }
+                pages[i] = page;
+            }
+        }
+
+        function changePage(destinationPage) {
+            finishPage(currentPage);
+            currentPage = destinationPage;
+        }
+
+        function finishPage(pageNumber) {
+            calcAndSetTime(pageNumber);
+            if (pageNumber == pageWithQuestion) {
+                setAnswersIfNeeded(pageNumber)
+            }
+        }
+
+        function calcAndSetTime(pageNumber) {
+            date = new Date();
+            var now = date.getTime();
+            var diffTime;
+
+            diffTime = now - lastTime;
+            diffTimeInSeconds = diffTime / 1000
+            lastTime = now;
+            addTime(pageNumber, diffTimeInSeconds);
+        }
+
+        function setAnswersIfNeeded(pageNumber) {
+            if (pageNumber == pageWithQuestion) {
+                var answer1 = $('input:radio[name=q1]:checked').val();
+                var answer2Array = [];
+                $("input:checkbox[name=q2]:checked").each(function () {
+                    answer2Array.push($(this).val());
+                });
+                var answer2 = answer2Array.join(";");
+                var answer3 = $('textarea[name=textarea_1]').val();
+                setAnswers(pageNumber, [answer1, answer2, answer3]);
+            }
+        }
+
+        function addTime(pageNumber, time) {
+            pages[pageNumber - 1].time += time;
+        }
+
+        function setAnswers(pageNumber, answers) {
+            pages[pageNumber - 1].answers = answers;
+        }
+
+        function getMarkedCheckboxes(pageNumber, answers) {
+            pages[pageNumber - 1].answers = answers;
+        }
+
+    </script>
+</head>
+
+<body>
+<div data-role="page" id="overview" data-theme="b">
+    <div data-role="header" data-theme="b">
+        <a href="" data-role="button" data-icon="back" onclick="finishPresentation();">Back</a>
+
+        <h1>Wstęp</h1>
+
+    </div>
+    <div data-role="content" data-theme="b">
+        <div data-role="navbar">
+            <ul>
+                <li><a href="#overview" class="ui-btn-active ui-state-persist"
+                       onclick="changePage(1)">Wstęp</a>
+                </li>
+                <li><a href="#description" onclick="changePage(2)">Opis</a></li>
+                <li><a href="#json" onclick="changePage(3)">JSON</a></li>
+                <li><a href="#questions" onclick="changePage(4)">Pytania</a></li>
+            </ul>
+        </div>
+        <p>
+
+        <p>Jest to przykładowa prezentacja CLM, która omawia komunikację z modułem CLM aplikacji IZI FarmaProm.</br>
+            Prezentacja zlicza czas pobytu na każdej z podstron, a także zawiera kilka pytań.
+        </p>
+
+
+    </div>
+    <div data-role="footer" data-theme="b">
+        <h4>FarmaProm &copy; 2013</h4>
+    </div>
+</div>
+
+<div data-role="page" id="description" data-theme="b">
+    <div data-role="header" data-theme="b">
+        <a href="" data-role="button" data-icon="back" onclick="finishPresentation();">Back</a>
+
+        <h1>Opis</h1>
+    </div>
+    <div data-role="content" data-theme="b">
+        <div data-role="navbar">
+            <ul>
+                <li><a href="#overview" onclick="changePage(1)">Wstęp</a></li>
+                <li><a href="#description" class="ui-btn-active ui-state-persist"
+                       onclick="changePage(2)">Opis</a></li>
+                <li><a href="#json" onclick="changePage(3)">JSON</a></li>
+                <li><a href="#questions" onclick="changePage(4)">Pytania</a></li>
+            </ul>
+        </div>
+        <p>
+            Obowiązkową funkcją do zaimplementowania jest <code>finishPresentation()</code>. Wywołujemy ją po stronie
+            aplikacji IZI przy naciśnięciu
+            fizycznego przycisku <i>back</i>.</br>
+            Funkcja ta powinna z kolei wywołać funckję <code>izi.finish(wynikowyJSON)</code>, przez którą należy
+            przekazać JSONa.
+        </p>
+
+        <p>
+            Kolejnymi funkcjami do zaimplementowania są <code>pausePresentation()</code> oraz
+            <code>resumePresentation()</code>. Funkcję <code>pausePresentation()</code> wywołujemy w momencie gdy
+            wygaszany jest
+            ekran urządzenia lub gdy minimalizujemy prezentację, z kolei <code>resumePresentation()</code>
+            wywołujemy gdy włączamy ekran lub przywracamy prezentacje po
+            zminimalizowaniu. Funkcje te możemy wykorzystać np. do uwzględnienia wygaszenia ekranu przy zliczaniu czasu
+            pobytu w prezentacji.
+        </p>
+
+        <p>Po kliknięciu na przycisk <i>Back</i> w lewym górnym rogu prezentacji pojawia się okno dialogowe, które
+            zawiera wygenerowany
+            JSON, który jest zgodny ze standardem komunikacji z aplikacją IZI FarmaProm.</br>
+            W prezentacji nie jest konieczny przycisk wyjścia, ponieważ użytkownik może wyjść z prezentacji przyciskiem
+            fizycznym urządzenia.</br>
+            Jeśli przestawimy w kodzie flagę <code>browserPreview</code> na false to prezentacja nie będzie pokazywać
+            okna
+            dialogowego tylko wywoła funkcję <code>izi.finish()</code> na webview aplikacji IZI.</p>
+    </div>
+    <div data-role="footer" data-theme="b">
+        <h4>FarmaProm &copy; 2013</h4>
+    </div>
+</div>
+
+
+<div data-role="page" id="json" data-theme="b">
+    <div data-role="header" data-theme="b">
+        <a href="" data-role="button" data-icon="back" onclick="finishPresentation();">Back</a>
+
+        <h1>JSON</h1>
+    </div>
+    <div data-role="content" data-theme="b">
+        <div data-role="navbar">
+            <ul>
+                <li><a href="#overview" onclick="changePage(1)">Wstęp</a></li>
+                <li><a href="#description" onclick="changePage(2)">Opis</a></li>
+                <li><a href="#json" class="ui-btn-active ui-state-persist"
+                       onclick="changePage(3)">JSON</a></li>
+                <li><a href="#questions" onclick="changePage(4)">Pytania</a></li>
+            </ul>
+        </div>
+
+        <p>Przykładowy JSON akceptowalny przez moduł CLM aplikacji IZI:</p>
+        <pre>
+<code>
+    [
+    {
+    "time" : 62,
+    "questions" : [ "Jaka jest pierwsza litera alfabetu", "Jaka jest druga litera alfabetu" ],
+    "answers" : [ "a", "b" ],
+    "page" : 1
+    },
+    {
+    "time" : 325,
+    "page" : 2
+    }
+    ]
+</code>
+</pre>
+
+    </div>
+    <div data-role="footer" data-theme="b">
+        <h4>FarmaProm &copy; 2013</h4>
+    </div>
+</div>
+
+<div data-role="page" id="questions">
+    <div data-role="header" data-theme="b">
+        <a href="" data-role="button" data-icon="back" onclick="finishPresentation();">Back</a>
+
+        <h1>Pytania</h1>
+    </div>
+    <div data-role="content" data-theme="b">
+        <div data-role="navbar">
+            <ul>
+                <li><a href="#overview" onclick="changePage(1)">Wstęp</a></li>
+                <li><a href="#description" onclick="changePage(2)">Opis</a></li>
+                <li><a href="#json" onclick="changePage(3)">JSON</a></li>
+                <li><a href="#questions" class="ui-btn-active ui-state-persist"
+                       onclick="changePage(4)">Pytania</a></li>
+            </ul>
+        </div>
+        <div data-role="fieldcontain">
+            <form>
+                <fieldset data-role="controlgroup">
+                    <legend>Jak oceniasz prezentację?</legend>
+
+                    <input type="radio" name="q1" id="q1_1" value="1"/>
+                    <label for="q1_1">1 - niedostateczna</label>
+                    <input type="radio" name="q1" id="q1_2" value="2"/>
+                    <label for="q1_2">2 - mierna</label>
+                    <input type="radio" name="q1" id="q1_3" value="3"/>
+                    <label for="q1_3">3 - dostateczna</label>
+                    <input type="radio" name="q1" id="q1_4" value="4"/>
+                    <label for="q1_4">4 - dobra</label>
+                    <input type="radio" name="q1" id="q1_5" value="5"/>
+                    <label for="q1_5">5 - bardzo dobra</label>
+                    <input type="radio" name="q1" id="q1_6" value="6"/>
+                    <label for="q1_6">6 - brawo!</label>
+                </fieldset>
+            </form>
+
+            <form>
+                <fieldset data-role="controlgroup">
+                    <legend>Kim jesteś?</legend>
+
+                    <input type="checkbox" name="q2" id="q2_1" value="aptekarzem"/>
+                    <label for="q2_1">aptekarzem</label>
+                    <input type="checkbox" name="q2" id="q2_2" value="lekarzem"/>
+                    <label for="q2_2">lekarzem</label>
+                    <input type="checkbox" name="q2" id="q2_3" value="programista"/>
+                    <label for="q2_3">programistą</label>
+                </fieldset>
+            </form>
+
+            <form>
+                <label for="textarea_1">Opisz swoje uwagi:</label>
+                <textarea name="textarea_1" id="textarea_1"></textarea>
+            </form>
+        </div>
+    </div>
+    <div data-role="footer" data-theme="b">
+        <h4>FarmaProm &copy; 2013</h4>
+    </div>
+</div>
+</body>
+</html>
+
